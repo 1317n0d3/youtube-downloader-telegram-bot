@@ -5,18 +5,20 @@ dotenv.config();
 
 const TelegramBot = require("node-telegram-bot-api");
 const token = process.env.API_KEY;
-const adminId = process.env.ADMIN_ID;
+const adminId = +process.env.ADMIN_ID;
 const bot = new TelegramBot(token, { polling: true });
 
 bot.onText(/\/echo (.+)/, (msg, match) => {
   const chatId = msg.chat.id;
   const resp = match[1];
   let messageId = 0;
+
   Promise.all([bot.sendMessage(chatId, `downloading`)]).then((results) => {
     messageId = results[0].message_id;
   });
 
   if (chatId === adminId) {
+    let consoleData = "";
     const child = spawn(
       `D: & dir & cd Downloads\\yt & npx kkr -d "${resp}" --live`,
       {
@@ -27,18 +29,22 @@ bot.onText(/\/echo (.+)/, (msg, match) => {
     child.stdout.on("data", (data) => {
       console.log(`child stdout: ${data}`);
 
-      // bot.editMessageText(`${data}`, {
-      //   chat_id: chatId,
-      //   message_id: messageId,
-      // });
+      consoleData = data;
     });
 
     child.stderr.on("data", (data) => {
       console.error(`child stderr: ${data}`);
     });
 
-    console.log(resp);
-    bot.sendMessage(chatId, resp);
+    setInterval(() => {
+      bot.editMessageText(`${consoleData}`, {
+        chat_id: chatId,
+        message_id: messageId,
+      });
+    }, 5000);
+
+    // console.log(resp);
+    // bot.sendMessage(chatId, resp);
   }
 });
 
